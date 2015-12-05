@@ -55,10 +55,12 @@ document.ondomcontentready = ready
 					ctx.lineTo(shapeObj.points[p].left,shapeObj.points[p].top)
 				}
 			}
+			console.log(shapeObj)
 			ctx.closePath()
-			ctx.lineWidth = 1
+			ctx.lineWidth = shapeObj.stroke.width
+			ctx.lineJoin = shapeObj.stroke.cap
 			ctx.fillStyle = shapeObj.fill||"rgba(255,255,255,0)"
-			ctx.strokeStyle = 'green'
+			ctx.strokeStyle = shapeObj.stroke.color
 			ctx.fill()
 			ctx.stroke()
 		}
@@ -425,7 +427,7 @@ module.exports = function(xDom,cb,$class){
 	var canvasParent = $class.settings.parent,
 			parentWidth = canvasParent.width,
 			parentHeight = canvasParent.height,
-			percentage = require('../actions/percentage.js')
+			percentage = require('../actions/makePercentage.js')
 
 	var shapeObj = this
 
@@ -523,7 +525,23 @@ module.exports = function(xDom,cb,$class){
 			return this
 		},
 		stroke:function(val){
-			shapeObj.stroke = val
+			var splitArr = val.split(' ')
+			//round bevel miter
+			var directive = {}
+			for(var p = 0; p<Object.keys(splitArr).length;p++){
+				if(splitArr[p]==='round'||splitArr[p]==='beval'||splitArr[p]==='miter'){
+					directive.cap = splitArr[p]
+				}
+				else{
+					if(isNaN(splitArr[p])&&!/%/g.test(splitArr[p])&&!/px/g.test(splitArr[p])){
+						directive.color = splitArr[p]
+					}
+				}
+				if(!isNaN(splitArr[p])||/px/g.test(splitArr[p])||/%/g.test(splitArr[p])){
+					directive.width = percentage(splitArr[p],parentWidth)
+				}
+			}
+			shapeObj.stroke = directive
 			cb(shapeObj)
 			return this
 		}
@@ -531,7 +549,7 @@ module.exports = function(xDom,cb,$class){
 
 }
 
-},{"../actions/percentage.js":2}],11:[function(require,module,exports){
+},{"../actions/makePercentage.js":1}],11:[function(require,module,exports){
 module.exports = function(fn){
 
 fn.each = function(cb){
