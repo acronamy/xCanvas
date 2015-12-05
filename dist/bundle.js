@@ -1,10 +1,11 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 module.exports = function(val,parentVal){
 
+
 	if(/%/g.test(val)){
 		return require('./percentage.js')(parseInt(val),parentVal)
 	}
-	else return parseInt(width)
+	else return parseInt(val)
 
 }
 
@@ -36,7 +37,6 @@ document.ondomcontentready = ready
 		rect:function(shapeObj){
 			ctx.fillStyle = shapeObj.fill
 			ctx.fillRect(shapeObj.offsetLeft,shapeObj.offsetTop,shapeObj.width,shapeObj.height)
-			console.log(shapeObj)
 		},
 		circle:function(shapeObj){
 			ctx.beginPath();
@@ -45,7 +45,22 @@ document.ondomcontentready = ready
 			ctx.fill();
 		},
 		path:function(shapeObj){
-			console.log(shapeObj)
+			ctx.beginPath()
+			ctx.moveTo(
+				shapeObj.points.start.left,
+				shapeObj.points.start.top
+			)
+			for(var p = 0; p<Object.keys(shapeObj.points).length; p++){
+				if(shapeObj.points[p]){
+					ctx.lineTo(shapeObj.points[p].left,shapeObj.points[p].top)
+				}
+			}
+			ctx.closePath()
+			ctx.lineWidth = 1
+			ctx.fillStyle = shapeObj.fill||"rgba(255,255,255,0)"
+			ctx.strokeStyle = 'green'
+			ctx.fill()
+			ctx.stroke()
 		}
 	}
 
@@ -56,6 +71,7 @@ document.ondomcontentready = ready
 		var renderArr = this.xDom[vis]
 	}
 
+
 	for(var i = 0; i<renderArr.length; i++){
 		var layerKeys = Object.keys(renderArr)[i],
 				layerN = renderArr[layerKeys],
@@ -63,6 +79,7 @@ document.ondomcontentready = ready
 
 		for(var y = 0; y<layerLen;y++){
 			var shape = layerN[Object.keys(layerN)[y]]
+
 			if(shape.type==='rect') render.rect(shape)
 			else if(shape.type==='circle') render.circle(shape)
 			else if(shape.type==='path') render.path(shape)
@@ -479,14 +496,24 @@ module.exports = function(xDom,cb,$class){
 			return this
 		},
 		//path
-		draw:function(val){
-
+		to:function(val){
+			if(shapeObj.hasOwnProperty('offsetTop')){
+				val.top = val.top + shapeObj.offsetTop
+			}
+			if(shapeObj.hasOwnProperty('offsetLeft')){
+				val.left = val.left + shapeObj.offsetLeft
+			}
+			if(Object.keys(shapeObj.points).length===0){
+				shapeObj.points['start'] = val
+			}
+			else{
+				shapeObj.points[Object.keys(shapeObj.points).length++] = val
+			}
 			cb(shapeObj)
 			return this
 		},
 		layer:function(val){
 			shapeObj.layer = val
-
 			cb(shapeObj)
 			return this
 		},
