@@ -22,47 +22,83 @@ module.exports = function ready(vis){
 //only render when document is ready
 document.ondomcontentready = ready
 
-
 	var ctx = this.ctx,
 			element = this.element,
 			settings = this.settings,
-			elementParent = settings.parent
-			percentage = require('./makePercentage.js')
+			elementParent = settings.parent,
+			percentage = require('./makePercentage.js'),
+			transparent = "rgba(255,255,255,0)"
 
 	element.width = percentage(settings.width,elementParent.width)
 	element.height = percentage(settings.height,elementParent.height)
+	start(ctx)
+	ctx.fillStyle = settings.background
+	ctx.rect(0,0,percentage(settings.width,elementParent.width),percentage(settings.height,elementParent.height))
+	ctx.closePath()
+	ctx.fill()
 
+function strokeFix(obj,prop,ctx){
+	if(obj.hasOwnProperty(prop)){
+		ctx.lineWidth = obj.stroke.width||0
+		ctx.lineJoin = obj.stroke.cap||'miter'
+		ctx.strokeStyle = obj.stroke.color||transparent
+	}
+	else{
+		ctx.lineWidth = 0
+		ctx.lineJoin = 'miter'
+		ctx.strokeStyle = transparent
+	}
+}
+
+function start(ctx){
+	ctx.closePath();
+	ctx.beginPath()
+}
+
+function parsePaths(obj,ctx){
+	for(var p = 0; p<Object.keys(obj.points).length; p++){
+		if(obj.points[p]){
+			ctx.lineTo(obj.points[p].left,obj.points[p].top)
+		}
+	}
+}
+
+function applyStyle(ctx){
+	ctx.fill()
+	ctx.stroke()
+}
 
 	var render = {
+
 		rect:function(shapeObj){
+			start(ctx)
+			strokeFix(shapeObj,'stroke',ctx)
 			ctx.fillStyle = shapeObj.fill
-			ctx.fillRect(shapeObj.offsetLeft,shapeObj.offsetTop,shapeObj.width,shapeObj.height)
+			ctx.rect(shapeObj.offsetLeft,shapeObj.offsetTop,shapeObj.width,shapeObj.height)
+			ctx.closePath()
+			applyStyle(ctx)
 		},
+
 		circle:function(shapeObj){
-			ctx.beginPath();
+			start(ctx)
+			strokeFix(shapeObj,'stroke',ctx)
 			ctx.fillStyle = shapeObj.fill
 			ctx.arc(shapeObj.offsetLeft+shapeObj.radius,shapeObj.offsetTop+shapeObj.radius,shapeObj.radius,0,shapeObj.quadrant*Math.PI);
-			ctx.fill();
+			ctx.closePath()
+			applyStyle(ctx)
 		},
+
 		path:function(shapeObj){
-			ctx.beginPath()
+			start(ctx)
 			ctx.moveTo(
 				shapeObj.points.start.left,
 				shapeObj.points.start.top
 			)
-			for(var p = 0; p<Object.keys(shapeObj.points).length; p++){
-				if(shapeObj.points[p]){
-					ctx.lineTo(shapeObj.points[p].left,shapeObj.points[p].top)
-				}
-			}
-			console.log(shapeObj)
+			parsePaths(shapeObj,ctx)
+			strokeFix(shapeObj,'stroke',ctx)
+			ctx.fillStyle = shapeObj.fill||transparent
 			ctx.closePath()
-			ctx.lineWidth = shapeObj.stroke.width
-			ctx.lineJoin = shapeObj.stroke.cap
-			ctx.fillStyle = shapeObj.fill||"rgba(255,255,255,0)"
-			ctx.strokeStyle = shapeObj.stroke.color
-			ctx.fill()
-			ctx.stroke()
+			applyStyle(ctx)
 		}
 	}
 
@@ -174,6 +210,8 @@ function X(a){
 		$class.settings.parent = {}
 		$class.settings.parent.width = parent.offsetWidth - scrollbarWidth()
 		$class.settings.parent.height = parent.offsetHeight - scrollbarWidth()
+		$class.settings.renderWidth = $class.settings.parent.width
+		$class.settings.renderHeight = $class.settings.parent.height
 		return $class
 	}
 	if(typeof a ==='object') a = a.xuid
@@ -271,7 +309,6 @@ xCanvas.defaults
 
 //layers
 	.layer('layer-1')
-	.layer('layer-2')
 
 xCanvas.fn.shape = require('./prototypes/create.js').bind(xCanvas)(xDom).shape
 xCanvas.fn.rect = require('./prototypes/create.js').bind(xCanvas)(xDom).rect
@@ -424,10 +461,11 @@ module.exports = function(xDom){
 },{"../actions/makePercentage.js":1,"./createFns.js":10}],10:[function(require,module,exports){
 module.exports = function(xDom,cb,$class){
 
-	var canvasParent = $class.settings.parent,
-			parentWidth = canvasParent.width,
-			parentHeight = canvasParent.height,
-			percentage = require('../actions/makePercentage.js')
+	var settings = $class.settings,
+			canvasParent = settings.parent,
+			percentage = require('../actions/makePercentage.js'),
+			parentWidth = percentage(settings.width,canvasParent.width),
+			parentHeight = percentage(settings.height,canvasParent.height)
 
 	var shapeObj = this
 
