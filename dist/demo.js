@@ -11,9 +11,22 @@ X('#c').ready(function(canvas){
 
 	canvas.rect({})
 		.style({
-			height:"100%",
-			width:"75%"
+			height:"20%",
+			width:"20%",
+			offsetLeft:"5%",
+			offsetTop:"5%",
+			fill:"red"
 		})
+
+	canvas.circle({})
+		.style({
+		radius:"20%",
+		fill:"yellow",
+		offsetTop:"0%",
+		offsetLeft:"0%",
+		layer:"layer-2",
+		quadrant:"100%"
+	})
 
 	canvas.path({})
 

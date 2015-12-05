@@ -1,8 +1,6 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 module.exports = function(val,parentVal){
 
-	console.log(val,parentVal)
-
 	if(/%/g.test(val)){
 		return require('./percentage.js')(parseInt(val),parentVal)
 	}
@@ -19,18 +17,93 @@ var b = a*of,
 }
 
 },{}],3:[function(require,module,exports){
-module.exports = function(vis){
-	console.log(this)
+module.exports = function ready(vis){
+//only render when document is ready
+document.ondomcontentready = ready
 
-	if(!vis||vs==='*'||vis==='all'){
-		console.log(this.xDom[vis])
+
+	var ctx = this.ctx,
+			element = this.element,
+			settings = this.settings,
+			elementParent = settings.parent
+			percentage = require('./makePercentage.js')
+
+	element.width = percentage(settings.width,elementParent.width)
+	element.height = percentage(settings.height,elementParent.height)
+
+
+	var render = {
+		rect:function(shapeObj){
+			ctx.fillStyle = shapeObj.fill
+			ctx.fillRect(shapeObj.offsetLeft,shapeObj.offsetTop,shapeObj.width,shapeObj.height)
+			console.log(shapeObj)
+		},
+		circle:function(shapeObj){
+			ctx.beginPath();
+			ctx.fillStyle = shapeObj.fill
+			ctx.arc(shapeObj.offsetLeft+shapeObj.radius,shapeObj.offsetTop+shapeObj.radius,shapeObj.radius,0,shapeObj.quadrant*Math.PI);
+			ctx.fill();
+		},
+		path:function(shapeObj){
+			console.log(shapeObj)
+		}
 	}
 
-	console.log(this.xDom)
+	if(!vis||vs==='*'||vis==='all'){
+		var renderArr = this.xDom
+	}
+	else{
+		var renderArr = this.xDom[vis]
+	}
+
+	for(var i = 0; i<renderArr.length; i++){
+		var layerKeys = Object.keys(renderArr)[i],
+				layerN = renderArr[layerKeys],
+				layerLen = layerN.length
+
+		for(var y = 0; y<layerLen;y++){
+			var shape = layerN[Object.keys(layerN)[y]]
+			if(shape.type==='rect') render.rect(shape)
+			else if(shape.type==='circle') render.circle(shape)
+			else if(shape.type==='path') render.path(shape)
+		}
+
+
+	}
 
 }
 
-},{}],4:[function(require,module,exports){
+},{"./makePercentage.js":1}],4:[function(require,module,exports){
+module.exports = function getScrollBarWidth() {
+	var inner = document.createElement('p');
+	inner.style.width = "100%";
+	inner.style.height = "200px";
+
+	var outer = document.createElement('div');
+	outer.style.position = "absolute";
+	outer.style.top = "0px";
+	outer.style.left = "0px";
+	outer.style.visibility = "hidden";
+	outer.style.width = "200px";
+	outer.style.height = "150px";
+	outer.style.overflow = "hidden";
+	outer.appendChild(inner);
+
+	document.body.appendChild(outer);
+	var w1 = inner.offsetWidth;
+	outer.style.overflow = 'scroll';
+	var w2 = inner.offsetWidth;
+
+	if (w1 == w2) {
+		w2 = outer.clientWidth;
+	}
+
+	document.body.removeChild(outer);
+
+	return (w1 - w2);
+}
+
+},{}],5:[function(require,module,exports){
 module.exports = function(xCanvas){
 
 	return function set(){
@@ -63,22 +136,25 @@ module.exports = function(xCanvas){
 
 }
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 module.exports = function(xDom){
 
 var shapes = this.xDom,
-		$class = this
+		$class = this,
+		scrollbarWidth = require('../actions/scrollbarWidth.js')
 
 function X(a){
 	if(document.querySelector(a).nodeName==='CANVAS'){
+
 		$class.element = document.querySelector(a)
 		$class.ctx = document.querySelector(a).getContext('2d')
 		$class.ready = function(cb){ cb($class); return {render:$class.render.bind($class)}}
 		//parent
-		var parentSize = $class.element.parentNode.getBoundingClientRect()
+		var parent = $class.element.parentElement
+
 		$class.settings.parent = {}
-		$class.settings.parent.width = parentSize.width
-		$class.settings.parent.height = parentSize.height
+		$class.settings.parent.width = parent.offsetWidth - scrollbarWidth()
+		$class.settings.parent.height = parent.offsetHeight - scrollbarWidth()
 		return $class
 	}
 	if(typeof a ==='object') a = a.xuid
@@ -144,7 +220,7 @@ function init(a,b){
 	return X
 }
 
-},{"../prototypes/classes.js":7,"../prototypes/iteration.js":10}],6:[function(require,module,exports){
+},{"../actions/scrollbarWidth.js":4,"../prototypes/classes.js":8,"../prototypes/iteration.js":11}],7:[function(require,module,exports){
 var xCanvas = window.xCanvas = {},
 		X = window.X = (function(){
 			return require('./engine/X.js')
@@ -188,7 +264,7 @@ xCanvas.render = require('./actions/render.js')
 var X = window.X = X.bind(xCanvas)()
 
 
-},{"./actions/render.js":3,"./defaults/setup.js":4,"./engine/X.js":5,"./prototypes/create.js":8}],7:[function(require,module,exports){
+},{"./actions/render.js":3,"./defaults/setup.js":5,"./engine/X.js":6,"./prototypes/create.js":9}],8:[function(require,module,exports){
 module.exports = function(fn){
 
 fn.addClass = function(className){
@@ -218,7 +294,7 @@ fn.removeClass = function(className){
 
 }
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 var count = {
 	rect:0,
 	circle:0,
@@ -326,7 +402,7 @@ module.exports = function(xDom){
 	return new create()
 }
 
-},{"../actions/makePercentage.js":1,"./createFns.js":9}],9:[function(require,module,exports){
+},{"../actions/makePercentage.js":1,"./createFns.js":10}],10:[function(require,module,exports){
 module.exports = function(xDom,cb,$class){
 
 	var canvasParent = $class.settings.parent,
@@ -348,7 +424,24 @@ module.exports = function(xDom,cb,$class){
 				shapeObj.fill = obj.fill
 			}
 			if(obj.hasOwnProperty('quadrant')){
-				shapeObj.quadrant = obj.quadrant
+				shapeObj.quadrant = percentage(obj.quadrant,2)
+			}
+			if(obj.hasOwnProperty('offsetTop')){
+				shapeObj.offsetTop = percentage(obj.offsetTop,parentHeight)
+			}
+			if(obj.hasOwnProperty('offsetLeft')){
+				shapeObj.offsetLeft = percentage(obj.offsetLeft,parentHeight)
+			}
+			if(obj.hasOwnProperty('stroke')){
+				shapeObj.stroke = obj.stroke
+			}
+			if(obj.hasOwnProperty('radius')){
+				shapeObj.radius = percentage(obj.radius,parentWidth) /2
+				shapeObj.width = shapeObj.radius * 2
+				shapeObj.height = shapeObj.radius * 2
+			}
+			if(obj.hasOwnProperty('layer')){
+				shapeObj.layer = obj.layer
 			}
 
 			cb(shapeObj)
@@ -374,11 +467,18 @@ module.exports = function(xDom,cb,$class){
 			cb(shapeObj)
 			return this
 		},
+		//circle
 		quadrant:function(val){
 			shapeObj.quadrant = percentage(val,2)
 			cb(shapeObj)
 			return this
 		},
+		radius:function(val){
+			shapeObj.radius = percentage(val,parentWidth) /2
+			cb(shapeObj)
+			return this
+		},
+		//path
 		draw:function(val){
 
 			cb(shapeObj)
@@ -394,12 +494,17 @@ module.exports = function(xDom,cb,$class){
 			shapeObj.fill = val
 			cb(shapeObj)
 			return this
+		},
+		stroke:function(val){
+			shapeObj.stroke = val
+			cb(shapeObj)
+			return this
 		}
 	}
 
 }
 
-},{"../actions/percentage.js":2}],10:[function(require,module,exports){
+},{"../actions/percentage.js":2}],11:[function(require,module,exports){
 module.exports = function(fn){
 
 fn.each = function(cb){
@@ -410,4 +515,4 @@ fn.each = function(cb){
 
 }
 
-},{}]},{},[6]);
+},{}]},{},[7]);
